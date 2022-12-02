@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+	
+<mapper namespace="BoardDAO">
+	<!-- 쿼리 작성 영역 -->
+	<insert id="insertBoard" parameterType="board">
+		<selectKey resultType="int" keyProperty="boardNo" order="BEFORE">
+			SELECT IFNULL(MAX(BOARD_NO), 0) + 1 FROM BOARD
+		</selectKey>
+		INSERT INTO BOARD
+		VALUES (
+			#{boardNo},
+			#{boardTitle},
+			#{boardMain},
+			#{boardStar},
+			0,
+			now(),
+			0,
+			#{boardCate},
+			#{userId},
+			#{boardAddr},
+			0,
+			#{placeTitle}
+		)
+	</insert>
+	
+	<insert id="insertAdminboard" parameterType="board">
+		INSERT INTO BOARD(
+			BOARD_NO,
+			BOARD_TITLE,
+			BOARD_MAIN,
+			BOARD_STAR,
+			RPRT_CNT,
+			BOARD_RGD,
+			BOARD_CATECD,
+			BOARD_CATE,
+			USER_ID,
+			BOARD_CNT
+			) VALUES(
+			(SELECT IFNULL(MAX(A.BOARD_NO), 0) + 1 FROM BOARD A),
+			#{boardTitle},
+			#{boardMain},
+			0,
+			0,
+			now(),
+			0,
+			#{boardCate},
+			#{userId},
+			0
+		)
+	</insert>
+	
+	<update id="updateBoardCnt" parameterType="int">
+		UPDATE BOARD
+			SET BOARD_CNT = BOARD_CNT + 1
+			WHERE BOARD_NO = #{boardNo}
+	</update>
+	
+	<update id="updateBoard" parameterType="board">
+	UPDATE BOARD
+		SET BOARD_TITLE = #{boardTitle},
+			BOARD_MAIN = #{boardMain},
+			BOARD_STAR = #{boardStar},
+			BOARD_CATE = #{boardCate}
+		WHERE BOARD_NO = #{boardNo}
+	</update>
+	
+	<update id="updateAdminboard" parameterType="board">
+		UPDATE BOARD
+			SET BOARD_TITLE = #{boardTitle},
+				BOARD_MAIN = #{boardMain}
+			WHERE BOARD_NO = #{boardNo}				
+	</update>
+	
+	<delete id="deleteBoard" parameterType="int">
+	DELETE
+		FROM BOARD
+		WHERE BOARD_NO = #{boardNo}
+	</delete>
+	
+	<delete id="deleteAdminboard" parameterType="int">
+		DELETE 
+			FROM BOARD
+				WHERE BOARD_NO = #{boardNo}
+	</delete>
+	
+	<select id="getBoard" parameterType="int" resultType="board">
+	SELECT *
+		FROM BOARD
+		WHERE BOARD_NO = #{boardNo}
+	</select>
+	
+	<select id="getBoardMap" parameterType="int" resultType="camelHashMap">
+	SELECT *
+		FROM BOARD
+		WHERE BOARD_NO = #{boardNo}
+	</select>
+	
+	<!-- 게시글 목록 조회 -->
+	<select id="getBoardList" parameterType="map" resultType="board">
+	<!-- CDATA는 동적쿼리 인식못해서, CDATA 밖에서 실행 -->
+	<!-- OR는 WHERE 1=0, 2를 사용해야되고, AND는 1=1 -->
+		<![CDATA[
+			SELECT * FROM BOARD
+		]]>
+			<!-- key(boardDAO에서 받아온 key값, 페이지 번호 매길때 필요,  -->
+			<if test="boardSearch.searchKeyword != null and boardSearch.searchKeyword != ''">
+				<if test="boardSearch.searchCondition == 'all'">
+				WHERE 1 = 0
+					OR BOARD_TITLE LIKE CONCAT('%', #{boardSearch.searchKeyword}, '%')
+					OR BOARD_MAIN LIKE CONCAT('%', #{boardSearch.searchKeyword}, '%')
+					OR USER_ID LIKE CONCAT('%', #{boardSearch.searchKeyword}, '%')
+					<if test="boardSearch.boardCatecd != null or boardSearch.boardCatecd != '' or boardSearch.boardCatecd != 0">
+	                  AND BOARD_CATECD = #{boardSearch.boardCatecd}
+	               </if>
+				</if>
+				<if test="boardSearch.searchCondition != 'all'">
+				WHERE 1 = 1
+					<if test="boardSearch.searchCondition == 'title'">
+						AND BOARD_TITLE LIKE CONCAT('%', #{boardSearch.searchKeyword}, '%') 
+					</if>
+					<if test="boardSearch.searchCondition == 'main'">
+						AND BOARD_MAIN LIKE CONCAT('%', #{boardSearch.searchKeyword}, '%')
+					</if>
+					<if test="boardSearch.searchCondition == 'id'">
+						AND USER_ID LIKE CONTCAT('%', #{boardSearch.searchKeyword}, '%')
+					</if>
+					<if test="boardSearch.boardCatecd != null and boardSearch.boardCatecd != '' and boardSearch.boardCatecd != 0">
+		               AND BOARD_CATECD = #{boardSearch.boardCatecd}
+		            </if>
+				</if>
+			</if>
+			<if test="boardSearch.searchKeyword == null or boardSearch.searchKeyword == ''">
+	         WHERE 1 = 1
+	            <if test="boardSearch.boardCatecd != null and boardSearch.boardCatecd != '' and boardSearch.boardCatecd != 0">
+	               AND BOARD_CATECD = #{boardSearch.boardCatecd}
+				</if>
+			</if>
+			<!-- Limit 개수,  OFFSET 시작번호 -->
+			LIMIT #{cri.amount} OFFSET #{cri.startNum}
+	</select>
+	
+	<!-- 조회된 게시글만 나오게 하기. -->
+	<select id="getBoardTotalCnt" parameterType="map" resultType="int">
+			SELECT COUNT(*)
+			FROM BOARD
+			<if test="searchKeyword != null and searchKeyword != ''">
+				<if test="searchCondition == 'all'">
+				WHERE 1 = 0
+				   OR BOARD_TITLE LIKE CONCAT('%', #{searchKeyword}, '%')
+				   OR BOARD_MAIN LIKE CONCAT('%', #{searchKeyword}, '%')
+				   OR USER_ID LIKE CONCAT('%', #{searchKeyword}, '%')
+				</if>
+				<if test="searchCondition != 'all'">
+				WHERE 1 = 1
+					<if test="searchCondition == 'title'">
+						AND BOARD_TITLE LIKE CONCAT('%', #{searchKeyword}, '%')
+					</if>
+					<if test="searchCondition == 'main'">
+						AND BOARD_MAIN LIKE CONCAT('%', #{searchKeyword}, '%')
+					</if>
+					<if test="searchCondition == 'id'">
+						AND USER_ID LIKE CONCAT('%', #{searchKeyword}, '%')
+					</if>
+				</if>
+			</if>
+		
+	</select>
+	
+	<insert id="insertBoardFile" parameterType="boardFile">
+		INSERT INTO FILEUPLOAD(
+			FILE_NO,
+			BOARD_NO,
+			FILE_NAME,
+			ORI_FILE_NAME,
+			FILE_PATH,
+			FILE_CATE
+		) VALUES (
+			(
+				SELECT IFNULL(MAX(A.FILE_NO), 0) + 1 
+					FROM FILEUPLOAD A
+					WHERE A.BOARD_NO = #{boardNo}
+			),
+			#{boardNo},
+			#{fileName},
+			#{oriFileName},
+			#{filePath},
+			#{fileCate}
+		)
+	</insert>
+	
+	<select id="getBoardFileList" parameterType="int" resultType="boardFile">
+		SELECT *
+			FROM FILEUPLOAD
+			WHERE BOARD_NO = #{boardNo}
+	</select>
+	
+	<update id="updateBoardFile" parameterType="boardFile">
+		UPDATE FILEUPLOAD
+			SET FILE_NAME = #{fileName},
+				ORI_FILE_NAME = #{oriFileName},
+				FILE_PATH = #{filePath},
+				FILE_CATE = #{fileCate}
+			WHERE BOARD_NO = #{boardNo}
+			  AND FILE_NO = #{fileNo}
+	</update>
+	
+	<delete id="deleteBoardFile" parameterType="boardFile">
+		DELETE FROM FILEUPLOAD
+			WHERE BOARD_NO = #{boardNo}
+			  AND FILE_NO = #{fileNo}
+	</delete>
+	
+	<select id="getAdminboard" parameterType="int" resultType="board">
+	SELECT *
+		FROM BOARD
+		WHERE BOARD_NO = #{boardNo}
+	</select>
+	
+		
+	<!-- mypage 게시글 출력 -->
+	<select id="myBoardList" parameterType="map" resultType="board">
+			SELECT * 
+			FROM BOARD			
+			WHERE USER_ID = #{boardSearch.userId}
+				  <!-- AND BOARD_TITLE LIKE CONCAT('%', #{searchKeyword}, '%')  -->   
+			LIMIT #{cri.amount} OFFSET #{cri.startNum}
+	</select>
+	
+	<!-- mypage 게시글 카운트 -->
+	<select id="myBoardTotalCnt" parameterType="map" resultType="int">
+			SELECT COUNT(*)
+			FROM BOARD
+			WHERE USER_ID = #{userId}
+				 <!--  AND BOARD_TITLE LIKE CONCAT('%', #{searchKeyword}, '%')  -->     
+	</select>
+	
+		<select id="getAdBoardList" parameterType="map" resultType="board">
+	<![CDATA[
+		SELECT * FROM BOARD A
+				LEFT JOIN USER B
+				ON A.USER_ID = B.USER_ID
+	]]>
+			<if test="AdboardSearch.searchKeyword != null and AdboardSearch.searchKeyword != ''">
+				<if test="AdboardSearch.searchCondition == 'all'">
+				WHERE 1 = 0
+				   OR A.BOARD_TITLE LIKE CONCAT('%', #{AdboardSearch.searchKeyword}, '%')
+				   OR A.BOARD_MAIN LIKE CONCAT('%', #{AdboardSearch.searchKeyword}, '%')
+				   OR A.USER_ID LIKE CONCAT('%', #{AdboardSearch.searchKeyword}, '%')
+				</if>
+				<if test="AdboardSearch.searchCondition != 'all'">
+				WHERE 1 = 1
+					<if test="AdboardSearch.searchCondition == 'title'">
+						AND A.BOARD_TITLE LIKE CONCAT('%', #{AdboardSearch.searchKeyword}, '%')
+					</if>
+					<if test="AdboardSearch.searchCondition == 'content'">
+						AND A.BOARD_MAIN LIKE CONCAT('%', #{AdboardSearch.searchKeyword}, '%')
+					</if>
+					<if test="AdboardSearch.searchCondition == 'writer'">
+						AND A.USER_ID LIKE CONCAT('%', #{AdboardSearch.searchKeyword}, '%')
+					</if>
+				</if>
+			</if>
+			ORDER BY B.USER_ROLE
+			LIMIT #{cri.amount} OFFSET #{cri.startNum}
+	</select>
+	<select id="getAdBoardTotalCnt" parameterType="map" resultType="int">
+			SELECT COUNT(*)
+			FROM BOARD A
+			LEFT JOIN USER B
+			ON A.USER_ID = B.USER_ID
+			
+			<if test="searchKeyword != null and searchKeyword != ''">
+				<if test="searchCondition == 'all'">
+				WHERE 1 = 0
+				   OR A.BOARD_TITLE LIKE CONCAT('%', #{searchKeyword}, '%')
+				   OR A.BOARD_MAIN LIKE CONCAT('%', #{searchKeyword}, '%')
+				   OR A.USER_ID LIKE CONCAT('%', #{searchKeyword}, '%')
+				</if>
+				<if test="searchCondition != 'all'">
+				WHERE 1 = 1
+					<if test="searchCondition == 'title'">
+						AND A.BOARD_TITLE LIKE CONCAT('%', #{searchKeyword}, '%')
+					</if>
+					<if test="searchCondition == 'content'">
+						AND A.BOARD_MAIN LIKE CONCAT('%', #{searchKeyword}, '%')
+					</if>
+					<if test="searchCondition == 'writer'">
+						AND A.USER_ID LIKE CONCAT('%', #{searchKeyword}, '%')
+					</if>
+				</if>
+			</if>
+			ORDER BY B.USER_ROLE
+	</select>
+	
+</mapper>

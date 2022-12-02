@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename resource &apos;_999_ReviewUs_1201(3)/src/main/webapp/WEB-INF/views/comment/updateCommentGetBoard.jsp&apos; to &apos;commentSelect.jsp&apos;" description="Rename resource &apos;updateCommentGetBoard.jsp&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="src/main/webapp/WEB-INF/views/comment/updateCommentGetBoard.jsp" name="commentSelect.jsp" stamp="1669941542546" updateReferences="true"/>
+</session>

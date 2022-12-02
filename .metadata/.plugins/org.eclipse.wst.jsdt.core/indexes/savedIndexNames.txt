@@ -1,0 +1,7 @@
+INDEX VERSION 1.4+E:\AWS_group_assginment\back_up_2211231724\.metadata\.plugins\org.eclipse.wst.jsdt.core\indexes
+263262716.index
+3277652946.index
+3985191589.index
+182100262.index
+2605341414.index
+2331429627.index

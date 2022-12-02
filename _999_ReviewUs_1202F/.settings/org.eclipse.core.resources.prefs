@@ -1,0 +1,7 @@
+eclipse.preferences.version=1
+encoding//src/main/java/com/ezen/springboard/controller/BoardController.java=UTF-8
+encoding//src/main/java/com/ezen/springboard/service/board/BoardService.java=UTF-8
+encoding//src/main/java/com/ezen/springboard/service/board/impl/BoardDAO.java=UTF-8
+encoding//src/main/java/com/ezen/springboard/service/board/impl/BoardServiceImpl.java=UTF-8
+encoding//src/main/java/com/ezen/springboard/service/user/UserService.java=UTF-8
+encoding//src/main/java/com/ezen/springboard/service/user/impl/UserDAO.java=UTF-8

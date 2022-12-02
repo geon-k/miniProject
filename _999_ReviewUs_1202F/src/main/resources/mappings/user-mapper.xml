@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+	
+<mapper namespace="UserDAO">
+	<!-- 쿼리 작성 영역 -->
+	<select id="idCheck" parameterType="string" resultType="int">
+		SELECT COUNT(USER_ID)
+			FROM USER
+			WHERE USER_ID = #{userId}
+	</select>
+		<select id="nmCheck" parameterType="string" resultType="int">
+		SELECT COUNT(USER_NM)
+			FROM USER
+			WHERE USER_NM = #{userNm}
+	</select>
+	
+	<insert id="join" parameterType="user">
+	<![CDATA[
+		INSERT INTO USER(
+			USER_ID,
+			USER_PWD,
+			USER_NM,
+			USER_EMAIL,
+			USER_RGD
+		) VALUES (
+			#{userId},
+			#{userPwd},
+			#{userNm},
+			#{userEmail},
+			NOW()
+		)
+	]]>
+	</insert>
+	
+	<select id="login" parameterType="user" resultType="user">
+	<![CDATA[
+		SELECT USER_ID
+			 , USER_NM
+			 , USER_EMAIL
+			 , USER_ROLE
+			FROM USER
+			WHERE USER_ID = #{userId}
+			  AND USER_PWD = #{userPwd}
+	]]>
+	</select>
+	<update id="updateUserRole" parameterType="string">
+		UPDATE USER
+		SET USER_ROLE = 'Stopped'
+		WHERE USER_ID = #{userId }
+	</update>
+	<select id="getAduserlist" parameterType="map" resultType="user">
+	<![CDATA[
+		SELECT USER_ID, USER_PWD, USER_NM, SUBSTRING_INDEX(USER_EMAIL, '@', 1) AS USER_EMAIL1,
+      		SUBSTRING_INDEX(USER_EMAIL, '@', -1) AS USER_EMAIL2, USER_RGD, USER_ROLE
+			FROM USER
+			
+	]]>
+				<if test="userSearch.searchKeyword != null and userSearch.searchKeyword != ''">
+					<if test="userSearch.searchCondition == 'all'">
+					WHERE 1 = 0
+				   		OR USER_ID LIKE CONCAT('%', #{userSearch.searchKeyword}, '%')
+				   		OR USER_NM LIKE CONCAT('%', #{userSearch.searchKeyword}, '%')
+					</if>
+					<if test="userSearch.searchCondition != 'all'">
+					WHERE 1 = 1
+					<if test="userSearch.searchCondition == 'userId'">
+						AND USER_ID LIKE CONCAT('%', #{userSearch.searchKeyword}, '%')
+					</if>
+					<if test="userSearch.searchCondition == 'userNm'">
+						AND USER_NM LIKE CONCAT('%', #{userSearch.searchKeyword}, '%')
+					</if>
+					</if>
+				</if>
+				ORDER BY USER_ROLE
+				LIMIT #{cri.amount} OFFSET #{cri.startNum}
+	</select>
+	<select id="getUserTotalCnt" parameterType="map" resultType="int">
+			SELECT COUNT(*)
+			FROM USER
+			
+			<if test="searchKeyword != null and searchKeyword != ''">
+			<if test="searchCondition == 'all'">
+					WHERE 1 = 0
+				   		OR USER_NM LIKE CONCAT('%', #{searchKeyword}, '%')
+				   		OR USER_ID LIKE CONCAT('%', #{searchKeyword}, '%')
+					</if>
+					<if test="searchCondition != 'all'">
+					WHERE 1 = 1
+						<if test="searchCondition == 'userId'">
+							AND USER_ID LIKE CONCAT('%', #{searchKeyword}, '%')
+						</if>
+						<if test="searchCondition == 'userNm'">
+							AND USER_NM LIKE CONCAT('%', #{searchKeyword}, '%')
+						</if>
+					</if>
+				</if>
+				ORDER BY USER_ROLE
+	</select>
+	
+	<!-- 마이페이지 회원정보 -->
+	<select id="getMypage" parameterType="string" resultType="Map">
+		SELECT USER_ID, USER_NM, USER_EMAIL, (SELECT COUNT(*) FROM BOARD WHERE USER_ID = #{userId}) BOARD_C,
+		(select count(*) from comment WHERE writer = #{userId}) COMMENT_C
+		FROM USER 
+		WHERE USER_ID = #{userId}
+	</select>
+	
+	<!-- 마이페이지 회원정보 수정 전 현 회원정보 확인 -->
+	<select id="getUser" parameterType="string" resultType="user">
+		SELECT USER_PWD, USER_NM, SUBSTRING_INDEX(USER_EMAIL, '@', 1) AS USER_EMAIL1,
+	   			SUBSTRING_INDEX(USER_EMAIL, '@', -1) AS USER_EMAIL2
+		FROM USER
+		WHERE USER_ID = #{userId}
+	</select>
+	
+	<!-- 마이페이지 회원정보 수정 -->
+	<update id="updateUser" parameterType="user">
+		UPDATE USER
+			<set>
+				<if test="userPwd != null and userPwd != ''">USER_PWD = #{userPwd},</if>
+				<if test="userNm != null and userNm != ''">USER_NM = #{userNm},</if>
+				<if test="userEmail != null and userEmail != ''">USER_EMAIL = #{userEmail},</if>
+			</set>	
+		WHERE USER_ID = #{userId}
+	</update>
+	
+	<!-- 마이페이지 회원탈퇴 전 비밀번호 체크 -->
+	<select id="pwdCheck" parameterType="string" resultType="string">
+		SELECT USER_PWD
+		FROM USER
+		WHERE USER_ID = #{userId}
+	</select>
+	
+	<!-- 마이페이지 회원탈퇴 -->
+	<delete id="deleteUser" parameterType="string">
+		DELETE
+		FROM USER
+		WHERE USER_ID = #{userId}
+	</delete>
+</mapper>
